@@ -7,12 +7,12 @@
         android:id="@+id/action_insert_dummy"
         android:orderInCategory="100"
         android:title="Insert dummy"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/action_delete_all"
         android:orderInCategory="100"
         android:title="Delete All Rows"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
 
 </menu>

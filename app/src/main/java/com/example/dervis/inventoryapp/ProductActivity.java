@@ -4,12 +4,14 @@ package com.example.dervis.inventoryapp;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.NavUtils;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AlertDialog;
@@ -47,9 +49,21 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         et_supplier = findViewById(R.id.et_supplier);
         et_supplier_phone = findViewById(R.id.et_supplier_phone);
 
-        inputFields = new View[]{et_name, et_price, et_quantity, et_supplier, et_supplier_phone};
+        View btn_increase = findViewById(R.id.btn_increase_quantity);
+        View btn_decrease = findViewById(R.id.btn_decrease_quantity);
 
-        setupChangeListener();
+        inputFields = new View[]{et_name, et_price, et_quantity, et_supplier, et_supplier_phone, btn_decrease, btn_increase};
+
+
+        View.OnTouchListener touchListener = new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                mChangeDetected = true;
+                return false;
+            }
+        };
+
+        setupChangeListener(touchListener);
 
         mItemUri = getIntent().getData();
 
@@ -57,8 +71,8 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
             getSupportLoaderManager().initLoader(PRODUCT_LOADER_ID, null, this);
         }
 
-        View[] quantityButtons = new View[]{findViewById(R.id.btn_increase_quantity),
-                findViewById(R.id.btn_decrease_quantity)};
+        View[] quantityButtons = new View[]{btn_increase,
+                btn_decrease};
 
         for (View v : quantityButtons) {
             v.setOnClickListener(new View.OnClickListener() {
@@ -87,16 +101,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         }
     }
 
-    private void setupChangeListener() {
-
-        View.OnTouchListener touchListener = new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                mChangeDetected = true;
-                return false;
-            }
-        };
-
+    private void setupChangeListener(View.OnTouchListener touchListener) {
         for (View v : inputFields) {
             v.setOnTouchListener(touchListener);
         }
@@ -112,6 +117,26 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()) {
+            case R.id.action_delete:
+                showConfirmDialog(new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        getContentResolver().delete(mItemUri, null, null);
+                        finish();
+                    }
+                });
+                return true;
+            case R.id.action_contact_supplier:
+                showConfirmDialog(new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+                Intent intent = new Intent(Intent.ACTION_DIAL);
+                intent.setData(Uri.parse("tel:" + et_supplier_phone.getText().toString()));
+                startActivity(intent);
+                return true;
             case R.id.action_save_changes:
                 ContentValues values = extractContentValues();
 
@@ -127,35 +152,51 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                 return true;
             case android.R.id.home:
                 if (mChangeDetected) {
-                    return true;
+                    showConfirmDialog(new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            ProductActivity.this.finish();
+                        }
+                    });
+                } else {
+                    return false;
                 }
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private boolean showConfirmDialog() {
+    private void showConfirmDialog(DialogInterface.OnClickListener positiveListener) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
 
         builder.setMessage("Are You Sure?");
 
-        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("Yes", positiveListener);
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
             }
         });
 
-        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                ProductActivity.this.finish();
-            }
-        });
+        builder.create().show();
+    }
 
-        builder.show();
+    @Override
+    public void onBackPressed() {
+        if (!mChangeDetected) {
+            super.onBackPressed();
+        } else {
+            showConfirmDialog(new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent upIntent = new Intent(ProductActivity.this, InventoryActivity.class);
 
-        return false;
+                    NavUtils.navigateUpTo(ProductActivity.this, upIntent);
+                }
+            });
+        }
     }
 
     private ContentValues extractContentValues() {

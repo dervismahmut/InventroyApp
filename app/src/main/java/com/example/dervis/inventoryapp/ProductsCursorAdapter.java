@@ -1,5 +1,6 @@
 package com.example.dervis.inventoryapp;
 
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -11,7 +12,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import static com.example.dervis.inventoryapp.data.ProductContract.ProductEntry;
 
@@ -29,7 +29,7 @@ class ProductsCursorAdapter extends CursorAdapter {
 
 
     @Override
-    public void bindView(View view, Context context, final Cursor cursor) {
+    public void bindView(View view, final Context context, final Cursor cursor) {
         for (String name : cursor.getColumnNames()) {
 
             int columnIndex = cursor.getColumnIndexOrThrow(name);
@@ -42,26 +42,9 @@ class ProductsCursorAdapter extends CursorAdapter {
                     view.findViewById(R.id.btn_sale).setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            ContentValues values = new ContentValues();
+                            Uri uri = ContentUris.withAppendedId(ProductEntry.CONTENT_URI, Integer.parseInt(columnString));
 
-                            DatabaseUtils.cursorRowToContentValues(cursor, values);
-
-                            values.remove(ProductEntry._ID);
-
-                            Integer quantity = values.getAsInteger(ProductEntry.COLUMN_PRODUCT_QUANTITY);
-
-                            Long id = Long.parseLong(columnString);
-
-                            values.put(ProductEntry.COLUMN_PRODUCT_QUANTITY, quantity - 1);
-
-                            Uri itemUri = ContentUris.withAppendedId(ProductEntry.CONTENT_URI, id);
-
-                            if (quantity > 0) {
-                                v.getContext().getContentResolver().update(itemUri,
-                                        values, null, null);
-                            } else {
-                                Toast.makeText(v.getContext(), "Can't have negative stock!", Toast.LENGTH_SHORT).show();
-                            }
+                            reduceQuantityForUri(context, uri);
                         }
                     });
 
@@ -85,6 +68,28 @@ class ProductsCursorAdapter extends CursorAdapter {
                     ((TextView) view.findViewById(R.id.tv_supplier)).setText(columnString);
 
                     break;
+            }
+        }
+    }
+
+    private void reduceQuantityForUri(Context context, Uri uri) {
+        ContentResolver resolver = context.getContentResolver();
+
+        Cursor cursor = resolver.query(uri, null, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            ContentValues contentValues = new ContentValues();
+
+            DatabaseUtils.cursorRowToContentValues(cursor, contentValues);
+
+            String columnProductQuantity = ProductEntry.COLUMN_PRODUCT_QUANTITY;
+
+            Integer quantity = contentValues.getAsInteger(columnProductQuantity);
+
+            if (quantity > 0) {
+                contentValues.put(columnProductQuantity, quantity);
+
+                resolver.update(uri, contentValues, null, null);
             }
         }
     }

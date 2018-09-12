@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -36,6 +37,16 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.inventory_activity);
+
+        FloatingActionButton fab = findViewById(R.id.floatingActionButton);
+
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(InventoryActivity.this, ProductActivity.class);
+                startActivity(intent);
+            }
+        });
 
         mListView = findViewById(R.id.lv_inventory);
 
