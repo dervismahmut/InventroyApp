@@ -13,6 +13,9 @@ import android.widget.CursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Currency;
+import java.util.Locale;
+
 import static com.example.dervis.inventoryapp.data.ProductContract.ProductEntry;
 
 class ProductsCursorAdapter extends CursorAdapter {
@@ -53,9 +56,9 @@ class ProductsCursorAdapter extends CursorAdapter {
 
 
         ((TextView) view.findViewById(R.id.tv_name)).setText(name);
-        ((TextView) view.findViewById(R.id.tv_price)).setText(price);
-        ((TextView) view.findViewById(R.id.tv_quantity)).setText(quantity);
-        ((TextView) view.findViewById(R.id.tv_supplier)).setText(supplier);
+        ((TextView) view.findViewById(R.id.tv_price)).setText(formatPrice(price));
+        ((TextView) view.findViewById(R.id.tv_quantity)).setText(formatQuantity(quantity));
+        ((TextView) view.findViewById(R.id.tv_supplier)).setText(formatSupplierName(supplier));
 
 
         view.findViewById(R.id.btn_sale).setOnClickListener(new View.OnClickListener() {
@@ -85,5 +88,20 @@ class ProductsCursorAdapter extends CursorAdapter {
             Toast.makeText(context, "Negative Stock is not allowed", Toast.LENGTH_SHORT).show();
         }
 
+    }
+
+    private String formatSupplierName(String supplier) {
+        return "Supplier: " + supplier;
+    }
+
+    private String formatQuantity(String quantity) {
+        return quantity + " In Stock.";
+    }
+
+    private String formatPrice(String price) {
+        Currency currency = Currency.getInstance(Locale.US);
+        String symbol = currency.getSymbol();
+
+        return price + symbol;
     }
 }

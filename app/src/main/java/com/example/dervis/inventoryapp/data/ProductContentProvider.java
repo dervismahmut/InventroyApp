@@ -13,10 +13,13 @@ import com.example.dervis.inventoryapp.data.ProductContract.ProductEntry;
 
 public class ProductContentProvider extends ContentProvider {
 
+    private ProductDbHelper mDbHelper;
 
     private static final int PRODUCTS = 100;
     private static final int PRODUCT_ID = 101;
+
     static UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+
 
     static {
         sUriMatcher.addURI(ProductContract.CONTENT_AUTHORITY,
@@ -28,7 +31,109 @@ public class ProductContentProvider extends ContentProvider {
                 PRODUCT_ID);
     }
 
-    private ProductDbHelper mDbHelper;
+    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+
+        switch (sUriMatcher.match(uri)) {
+            case PRODUCTS:
+                return insertProduct(uri, values);
+            default:
+                throw new IllegalArgumentException("Insertion Not Supported For Uri:" + uri);
+        }
+    }
+
+    private Uri insertProduct(Uri uri, ContentValues values) {
+        if (!areInsertionValuesValid(values))
+            return null;
+
+
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+        long id = db.insert(ProductEntry.TABLE_NAME, null, values);
+
+        if (id > -1) {
+            Toast.makeText(getContext(), "New Row Id: " + id, Toast.LENGTH_SHORT).show();
+            notifyChangeInData(uri);
+            return ContentUris.withAppendedId(uri, id);
+        } else {
+            Toast.makeText(getContext(), "Insertion Was Unsuccessful!", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+    }
+
+    private boolean areInsertionValuesValid(ContentValues values) {
+
+        String columnProductName = ProductEntry.COLUMN_PRODUCT_NAME;
+        if (values.containsKey(columnProductName)) {
+            if (values.getAsString(columnProductName) == null)
+                throw new IllegalArgumentException("A Name is required");
+        } else {
+            throw new IllegalArgumentException("A Name is required");
+        }
+
+        String columnProductPrice = ProductEntry.COLUMN_PRODUCT_PRICE;
+        if (values.containsKey(columnProductPrice)) {
+            if (values.getAsString(columnProductPrice) == null)
+                throw new IllegalArgumentException("A Name is required");
+        } else {
+            throw new IllegalArgumentException("A Name is required");
+        }
+
+        String columnProductQuantity = ProductEntry.COLUMN_PRODUCT_QUANTITY;
+        if (values.containsKey(columnProductQuantity)) {
+            if (values.getAsString(columnProductQuantity) == null)
+                throw new IllegalArgumentException("Price is required");
+        } else {
+            throw new IllegalArgumentException("A Name is required");
+        }
+
+        String columnProductSupplierName = ProductEntry.COLUMN_PRODUCT_SUPPLIER_NAME;
+        if (values.containsKey(columnProductSupplierName)) {
+            if (values.getAsString(columnProductSupplierName) == null)
+                throw new IllegalArgumentException("Supplier's name is required");
+        } else {
+            throw new IllegalArgumentException("A Name is required");
+        }
+
+        String columnProductSupplierPhone = ProductEntry.COLUMN_PRODUCT_SUPPLIER_PHONE;
+        if (values.containsKey(columnProductSupplierPhone)) {
+            if (values.getAsString(columnProductSupplierPhone) == null)
+                throw new IllegalArgumentException("suppliers Phone Number is required");
+        } else {
+            throw new IllegalArgumentException("A Name is required");
+        }
+
+        return true;
+    }
+
+    @Override
+    public Cursor query(Uri uri, String[] projection, String selection,
+                        String[] selectionArgs, String sortOrder) {
+        switch (sUriMatcher.match(uri)) {
+            case PRODUCTS:
+
+                return queryProducts(uri, projection, selection, selectionArgs, sortOrder);
+            case PRODUCT_ID:
+
+                selection = ProductEntry._ID + "=?";
+                selectionArgs = extractSelectionArgs(uri);
+
+                return queryProducts(uri, projection, selection, selectionArgs, sortOrder);
+            default:
+                throw new IllegalArgumentException("Uri Query Supported:" + uri);
+        }
+    }
+
+    private Cursor queryProducts(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+        Cursor cursor = db.query(ProductEntry.TABLE_NAME, projection, selection,
+                selectionArgs, null, null, sortOrder);
+
+        cursor.setNotificationUri(getContext().getContentResolver(), uri);
+        return cursor;
+    }
+
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
@@ -76,32 +181,6 @@ public class ProductContentProvider extends ContentProvider {
         }
     }
 
-    @Override
-    public Uri insert(Uri uri, ContentValues values) {
-
-        switch (sUriMatcher.match(uri)) {
-            case PRODUCTS:
-                return insertProduct(uri, values);
-            default:
-                throw new IllegalArgumentException("Insertion Not Supported For Uri:" + uri);
-        }
-    }
-
-    private Uri insertProduct(Uri uri, ContentValues values) {
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-
-        long id = db.insert(ProductEntry.TABLE_NAME, null, values);
-
-        if (id > -1) {
-            Toast.makeText(getContext(), "New Row Id: " + id, Toast.LENGTH_SHORT).show();
-            notifyChangeInData(uri);
-            return ContentUris.withAppendedId(uri, id);
-        } else {
-            Toast.makeText(getContext(), "Insertion Was Unsuccessful!", Toast.LENGTH_SHORT).show();
-            return null;
-        }
-    }
-
     private void notifyChangeInData(Uri uri) {
         getContext().getContentResolver().notifyChange(uri, null);
     }
@@ -110,41 +189,6 @@ public class ProductContentProvider extends ContentProvider {
     public boolean onCreate() {
         mDbHelper = new ProductDbHelper(getContext());
         return true;
-    }
-
-    @Override
-    public Cursor query(Uri uri, String[] projection, String selection,
-                        String[] selectionArgs, String sortOrder) {
-        Cursor cursor = null;
-
-        switch (sUriMatcher.match(uri)) {
-            case PRODUCTS:
-
-                cursor = queryProducts(projection, selection, selectionArgs, sortOrder);
-
-                break;
-            case PRODUCT_ID:
-
-                selection = ProductEntry._ID + "=?";
-                selectionArgs = extractSelectionArgs(uri);
-
-                cursor = queryProducts(projection, selection, selectionArgs, sortOrder);
-
-                break;
-            default:
-                throw new IllegalArgumentException("Uri Query Supported:" + uri);
-        }
-
-        cursor.setNotificationUri(getContext().getContentResolver(), uri);
-
-        return cursor;
-    }
-
-    private Cursor queryProducts(String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
-
-        return db.query(ProductEntry.TABLE_NAME, projection, selection,
-                selectionArgs, null, null, sortOrder);
     }
 
     private String[] extractSelectionArgs(Uri uri) {
@@ -172,6 +216,9 @@ public class ProductContentProvider extends ContentProvider {
     private int updateProduct(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
+        if (!areUpdateValuesValid(values))
+            return 0;
+
         int rowsAffected = db.update(ProductEntry.TABLE_NAME, values, selection, selectionArgs);
 
         if (rowsAffected > 0) {
@@ -182,5 +229,40 @@ public class ProductContentProvider extends ContentProvider {
         }
 
         return rowsAffected;
+    }
+
+    private boolean areUpdateValuesValid(ContentValues values) {
+
+        String columnProductName = ProductEntry.COLUMN_PRODUCT_NAME;
+        if (values.containsKey(columnProductName)) {
+            if (values.getAsString(columnProductName) == null)
+                throw new IllegalArgumentException("A Name is required");
+        }
+
+        String columnProductPrice = ProductEntry.COLUMN_PRODUCT_PRICE;
+        if (values.containsKey(columnProductPrice)) {
+            if (values.getAsString(columnProductPrice) == null)
+                throw new IllegalArgumentException("A Name is required");
+        }
+
+        String columnProductQuantity = ProductEntry.COLUMN_PRODUCT_QUANTITY;
+        if (values.containsKey(columnProductQuantity)) {
+            if (values.getAsString(columnProductQuantity) == null)
+                throw new IllegalArgumentException("Price is required");
+        }
+
+        String columnProductSupplierName = ProductEntry.COLUMN_PRODUCT_SUPPLIER_NAME;
+        if (values.containsKey(columnProductSupplierName)) {
+            if (values.getAsString(columnProductSupplierName) == null)
+                throw new IllegalArgumentException("Supplier's name is required");
+        }
+
+        String columnProductSupplierPhone = ProductEntry.COLUMN_PRODUCT_SUPPLIER_PHONE;
+        if (values.containsKey(columnProductSupplierPhone)) {
+            if (values.getAsString(columnProductSupplierPhone) == null)
+                throw new IllegalArgumentException("suppliers Phone Number is required");
+        }
+
+        return true;
     }
 }

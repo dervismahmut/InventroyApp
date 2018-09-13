@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
-import android.support.v4.app.NavUtils;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AlertDialog;
@@ -41,7 +40,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_product);
+        setContentView(R.layout.product_activity);
 
         et_price = findViewById(R.id.et_price);
         et_name = findViewById(R.id.et_product_name);
@@ -54,13 +53,13 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
         setupChangeListener();
 
-        loadItemUri(getIntent().getData());
+        loadItemFromUriIfAvailable();
 
         setupQuantityButtons();
     }
 
-    private void loadItemUri(Uri data) {
-        mItemUri = data;
+    private void loadItemFromUriIfAvailable() {
+        mItemUri = getIntent().getData();
 
         if (mItemUri != null) {
             getSupportLoaderManager().initLoader(PRODUCT_LOADER_ID, null, this);
@@ -121,14 +120,32 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
         switch (item.getItemId()) {
             case R.id.action_delete:
-                showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        getContentResolver().delete(mItemUri, null, null);
-                        finish();
-                    }
-                });
-
+                if (mItemUri != null) {
+                    showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            getContentResolver().delete(mItemUri, null, null);
+                            finish();
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+                } else {
+                    showConfirmDialog("do you want to discard changes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+                }
                 return true;
             case R.id.action_contact_supplier:
                 if (mChangeDetected) {
@@ -137,6 +154,11 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                         public void onClick(DialogInterface dialog, int which) {
                             saveChanges();
                             contactSupplier();
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
                         }
                     });
                 } else {
@@ -147,9 +169,12 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                 return true;
             case R.id.action_save_changes:
 
-                saveChanges();
-
-                finish();
+                if (isInputValid()) {
+                    saveChanges();
+                    finish();
+                } else {
+                    Toast.makeText(this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
+                }
 
                 return true;
             case android.R.id.home:
@@ -159,6 +184,11 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                         public void onClick(DialogInterface dialog, int which) {
                             ProductActivity.this.finish();
                         }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
                     });
                     return true;
                 } else {
@@ -166,6 +196,14 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                 }
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private boolean isInputValid() {
+        return !et_name.getText().toString().isEmpty() &&
+                !et_price.getText().toString().isEmpty() &&
+                !et_quantity.getText().toString().isEmpty() &&
+                !et_supplier.getText().toString().isEmpty() &&
+                !et_supplier_phone.getText().toString().isEmpty();
     }
 
     private void contactSupplier() {
@@ -197,19 +235,14 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                 ((EditText) findViewById(R.id.et_supplier_phone)).getText().toString());
     }
 
-    private void showConfirmDialog(String message, DialogInterface.OnClickListener positiveListener) {
+    private void showConfirmDialog(String message, DialogInterface.OnClickListener positiveListener, DialogInterface.OnClickListener negativeListener) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
         builder.setMessage(message);
 
         builder.setPositiveButton("Yes", positiveListener);
 
-        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
+        builder.setNegativeButton("No", negativeListener);
 
         builder.create().show();
     }
@@ -219,14 +252,24 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         if (!mChangeDetected) {
             super.onBackPressed();
         } else {
-            showConfirmDialog("Are You Sure?", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    Intent upIntent = new Intent(ProductActivity.this, InventoryActivity.class);
-
-                    NavUtils.navigateUpTo(ProductActivity.this, upIntent);
-                }
-            });
+            showConfirmDialog("Would you like to save changes first?",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (isInputValid()) {
+                                saveChanges();
+                                ProductActivity.super.onBackPressed();
+                            } else {
+                                Toast.makeText(ProductActivity.this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            ProductActivity.super.onBackPressed();
+                        }
+                    });
         }
     }
 
@@ -239,8 +282,14 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor cursor) {
+        loadDataFromCursor(cursor);
+    }
+
+    private void loadDataFromCursor(Cursor cursor) {
         if (cursor.moveToFirst()) {
+
             for (String name : cursor.getColumnNames()) {
+
                 int columnIndex = cursor.getColumnIndexOrThrow(name);
                 String cursorString = cursor.getString(columnIndex);
 
@@ -267,6 +316,10 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
     @Override
     public void onLoaderReset(@NonNull Loader<Cursor> loader) {
-
+        for (View v : inputFields) {
+            if (v instanceof EditText) {
+                ((EditText) v).setText("");
+            }
+        }
     }
 }

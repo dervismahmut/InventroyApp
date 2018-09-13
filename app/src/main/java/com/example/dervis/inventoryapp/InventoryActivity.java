@@ -88,7 +88,7 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
 
             case R.id.action_insert_dummy:
 
-                ContentValues values = ProductEntry.CreateContentValues("A", 1, 1, "B", "C");
+                ContentValues values = ProductEntry.CreateContentValues("Apple", 1, 10, "An Apple Tree", "+123");
 
                 contentResolver.insert(ProductEntry.CONTENT_URI,
                         values);
