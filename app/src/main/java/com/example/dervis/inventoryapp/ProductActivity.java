@@ -68,7 +68,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
             public void onClick(View v) {
                 if (mChangeDetected) {
                     Utils.showConfirmDialog(
-                            "Would you like to save changes?", new DialogInterface.OnClickListener() {
+                            "Would You Like To Save Changes?", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     saveChangesAndFinish();
@@ -210,17 +210,13 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
     private void saveChangesAndFinish() {
         if (isInputValid()) {
-            ContentValues values = extractContentValues();
-
             ContentResolver resolver = getContentResolver();
 
             if (mDataItemUri != null) {
-                resolver.update(mDataItemUri, values, null, null);
+                resolver.update(mDataItemUri, extractContentValues(), null, null);
             } else {
-                resolver.insert(ProductContract.ProductEntry.CONTENT_URI, values);
+                resolver.insert(ProductContract.ProductEntry.CONTENT_URI, extractContentValues());
             }
-
-            mChangeDetected = false;
 
             finish();
         } else {
@@ -236,6 +232,9 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                 !editTextSupplierPhoneNumber.getText().toString().isEmpty();
     }
 
+    /**
+     * this method loops throw cursor columns and reacts according to column name.
+     */
     private void loadDataFromCursor(Cursor cursor) {
         if (cursor.moveToFirst()) {
 

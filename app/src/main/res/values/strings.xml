@@ -7,7 +7,7 @@
     <string name="product_activity_edit_title">Edit Product</string>
     <string name="empty_list_message_1">No Products Were Found,</string>
     <string name="empty_list_message_2">To Add A Product Press The Button Below.</string>
-    <string name="action_insert_dummy">Insert dummy</string>
+    <string name="action_insert_dummy">Insert Dummy Row</string>
     <string name="action_delete_all_products">Delete All Products</string>
     <string name="hint_name">Name</string>
     <string name="hint_price">Price</string>
