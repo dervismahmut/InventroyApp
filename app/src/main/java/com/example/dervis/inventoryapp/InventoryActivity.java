@@ -33,7 +33,7 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
 
     private static final int LOADER_PRODUCTS_ID = 100;
     private ListView mListView;
-    private CursorAdapter mAdapter;
+    private CursorAdapter mProductsAdapter;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -42,7 +42,7 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
 
         mListView = findViewById(R.id.lv_inventory);
 
-        mAdapter = new ProductsCursorAdapter(this, null);
+        mProductsAdapter = new ProductsCursorAdapter(this, null);
 
         setupFab();
 
@@ -54,13 +54,12 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
     private void setupListView() {
         mListView.setEmptyView(findViewById(R.id.empty_view_message));
 
-        mListView.setAdapter(mAdapter);
+        mListView.setAdapter(mProductsAdapter);
 
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
                 Uri uri = ContentUris.withAppendedId(ProductEntry.CONTENT_URI, id);
 
                 Intent intent = new Intent(InventoryActivity.this, ProductActivity.class);
@@ -105,7 +104,7 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
                 return true;
 
             case R.id.action_delete_all:
-                ProductActivity.showConfirmDialog("Do You Want To Delete All Products?",
+                Utils.showConfirmDialog("Do You Want To Delete All Products?",
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -138,11 +137,11 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
 
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-        mAdapter.swapCursor(data);
+        mProductsAdapter.swapCursor(data);
     }
 
     @Override
     public void onLoaderReset(@NonNull Loader<Cursor> loader) {
-        mAdapter.swapCursor(null);
+        mProductsAdapter.swapCursor(null);
     }
 }

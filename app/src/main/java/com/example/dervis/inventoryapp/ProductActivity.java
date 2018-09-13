@@ -3,7 +3,6 @@ package com.example.dervis.inventoryapp;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -20,7 +19,6 @@ import com.example.dervis.inventoryapp.data.ProductContract;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.CursorLoader;
@@ -56,7 +54,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
             @Override
             public void onClick(View v) {
                 if (mChangeDetected) {
-                    showConfirmDialog(
+                    Utils.showConfirmDialog(
                             "Would you like to save changes?", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
@@ -90,6 +88,9 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
         if (mItemUri != null) {
             getSupportLoaderManager().initLoader(PRODUCT_LOADER_ID, null, this);
+            getSupportActionBar().setTitle(getString(R.string.product_activity_edit_title));
+        } else {
+            getSupportActionBar().setTitle(getString(R.string.product_activity_add_title));
         }
     }
 
@@ -150,18 +151,6 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         return super.onPrepareOptionsMenu(menu);
     }
 
-    public static void showConfirmDialog(String message, DialogInterface.OnClickListener positiveListener, DialogInterface.OnClickListener negativeListener, Context context) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-
-        builder.setMessage(message);
-
-        builder.setPositiveButton("Yes", positiveListener);
-
-        builder.setNegativeButton("No", negativeListener);
-
-        builder.create().show();
-    }
-
     private boolean isInputValid() {
         return !et_name.getText().toString().isEmpty() &&
                 !et_price.getText().toString().isEmpty() &&
@@ -171,6 +160,11 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
     }
 
     private void contactSupplier() {
+        if (!isInputValid()) {
+            Toast.makeText(this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String s = et_supplier_phone.getText().toString();
 
         if (s.isEmpty())
@@ -217,7 +211,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         switch (item.getItemId()) {
             case R.id.action_delete:
                 if (mItemUri != null) {
-                    showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
+                    Utils.showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             getContentResolver().delete(mItemUri, null, null);
@@ -230,7 +224,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                         }
                     }, this);
                 } else {
-                    showConfirmDialog("do you want to discard changes", new DialogInterface.OnClickListener() {
+                    Utils.showConfirmDialog("do you want to discard changes", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             finish();
@@ -250,7 +244,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                 return true;
             case android.R.id.home:
                 if (mChangeDetected) {
-                    showConfirmDialog("Do you want to discard changes?", new DialogInterface.OnClickListener() {
+                    Utils.showConfirmDialog("Do you want to discard changes?", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             ProductActivity.this.finish();
@@ -272,7 +266,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
     @Override
     public void onBackPressed() {
         if (mChangeDetected) {
-            showConfirmDialog("Do you want to discard changes?",
+            Utils.showConfirmDialog("Do you want to discard changes?",
                     new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {

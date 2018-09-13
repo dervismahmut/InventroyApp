@@ -29,9 +29,8 @@
                 android:id="@+id/et_product_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ems="10"
-                android:hint="Name"
+                android:hint="@string/hint_name"
                 android:inputType="textPersonName"
                 android:selectAllOnFocus="true" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -56,9 +55,8 @@
                 android:id="@+id/et_price"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ems="10"
-                android:hint="Price"
+                android:hint="@string/hint_price"
                 android:inputType="numberDecimal"
                 android:selectAllOnFocus="true" />
 
@@ -82,7 +80,6 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ems="10"
                 android:inputType="numberDecimal"
                 android:selectAllOnFocus="true">
@@ -92,7 +89,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:ems="10"
-                    android:hint="Quantity"
+                    android:hint="@string/hint_quantity"
                     android:inputType="numberDecimal"
                     android:selectAllOnFocus="true" />
 
@@ -147,9 +144,8 @@
                 android:id="@+id/et_supplier"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ems="10"
-                android:hint="Supplier Name"
+                android:hint="@string/hint_supplier_name"
                 android:inputType="textPersonName"
                 android:selectAllOnFocus="true" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -173,9 +169,8 @@
                 android:id="@+id/et_supplier_phone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ems="10"
-                android:hint="Supplier Phone Number"
+                android:hint="@string/hint_supplier_phone_number"
                 android:inputType="phone"
                 android:selectAllOnFocus="true">
 
@@ -192,7 +187,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
             android:layout_marginRight="8dp"
-            android:text="Call Supplier" />
+            android:text="@string/hint_call_supplier" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
