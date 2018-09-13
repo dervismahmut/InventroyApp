@@ -27,13 +27,13 @@ import androidx.loader.content.Loader;
 public class ProductActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final int PRODUCT_LOADER_ID = 1;
-    private Uri mItemUri;
+    private Uri mDataItemUri;
     private boolean mChangeDetected = false;
-    private EditText et_price;
-    private EditText et_name;
-    private EditText et_quantity;
-    private EditText et_supplier;
-    private EditText et_supplier_phone;
+    private EditText editTextPrice;
+    private EditText editTextName;
+    private EditText editTextQuantity;
+    private EditText editTextSupplierName;
+    private EditText editTextSupplierPhoneNumber;
 
     View[] inputFields;
 
@@ -42,14 +42,27 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.product_activity);
 
-        et_price = findViewById(R.id.et_price);
-        et_name = findViewById(R.id.et_product_name);
-        et_quantity = findViewById(R.id.et_quantity);
-        et_supplier = findViewById(R.id.et_supplier);
-        et_supplier_phone = findViewById(R.id.et_supplier_phone);
+        editTextPrice = findViewById(R.id.et_price);
+        editTextName = findViewById(R.id.et_product_name);
+        editTextQuantity = findViewById(R.id.et_quantity);
+        editTextSupplierName = findViewById(R.id.et_supplier);
+        editTextSupplierPhoneNumber = findViewById(R.id.et_supplier_phone);
 
-        inputFields = new View[]{et_name, et_price, et_quantity, et_supplier, et_supplier_phone, findViewById(R.id.btn_decrease_quantity), findViewById(R.id.btn_increase_quantity)};
 
+        //these input fields have been collected for listening to change in UI data.
+        inputFields = new View[]{editTextName, editTextPrice, editTextQuantity, editTextSupplierName, editTextSupplierPhoneNumber, findViewById(R.id.btn_decrease_quantity), findViewById(R.id.btn_increase_quantity)};
+
+
+        setupContactSupplierButton();
+
+        setupChangeListener();
+
+        loadItemFromUriIfAvailable();
+
+        setupQuantityButtons();
+    }
+
+    private void setupContactSupplierButton() {
         findViewById(R.id.btn_call_supplier).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -61,80 +74,12 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                                     saveChangesAndFinish();
                                     contactSupplier();
                                 }
-                            },
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            },
-                            ProductActivity.this);
+                            }, ProductActivity.this);
                 } else {
                     contactSupplier();
                 }
             }
         });
-
-
-        setupChangeListener();
-
-        loadItemFromUriIfAvailable();
-
-        setupQuantityButtons();
-    }
-
-    private void loadItemFromUriIfAvailable() {
-        mItemUri = getIntent().getData();
-
-        if (mItemUri != null) {
-            getSupportLoaderManager().initLoader(PRODUCT_LOADER_ID, null, this);
-            getSupportActionBar().setTitle(getString(R.string.product_activity_edit_title));
-        } else {
-            getSupportActionBar().setTitle(getString(R.string.product_activity_add_title));
-        }
-    }
-
-    private void setupQuantityButtons() {
-        View[] quantityButtons = new View[]{findViewById(R.id.btn_increase_quantity),
-                findViewById(R.id.btn_decrease_quantity)};
-
-        for (View v : quantityButtons) {
-            v.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    int quantity = Integer.parseInt(et_quantity.getText().toString());
-
-                    switch (v.getId()) {
-                        case R.id.btn_increase_quantity:
-
-                            et_quantity.setText(String.valueOf(++quantity));
-
-                            break;
-                        case R.id.btn_decrease_quantity:
-
-                            if (quantity > 0) {
-                                et_quantity.setText(String.valueOf(--quantity));
-                            } else {
-                                Toast.makeText(ProductActivity.this, "Negative Values Are Not Allowed!", Toast.LENGTH_SHORT).show();
-                            }
-
-                            break;
-                    }
-                }
-            });
-        }
-    }
-
-    private void setupChangeListener() {
-        for (View v : inputFields) {
-            v.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v1, MotionEvent event) {
-                    mChangeDetected = true;
-                    return false;
-                }
-            });
-        }
     }
 
     @Override
@@ -144,19 +89,106 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.action_delete:
+                //check if activity is in product detail mode
+                if (mDataItemUri != null) {
+                    Utils.showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            deleteCurrentProduct();
+                            finish();
+                        }
+                    }, this);
+                }
+                return true;
+            case R.id.action_save_changes:
+
+                saveChangesAndFinish();
+
+                return true;
+            case android.R.id.home:
+                if (mChangeDetected) {
+                    //confirm before discarding inputted information
+                    Utils.showConfirmDialog("Do You Want To Discard Changes?", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //go the inventory activity by finishing current activity
+                            ProductActivity.this.finish();
+                        }
+                    }, this);
+                    return true;
+                } else {
+                    return false;
+                }
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (mItemUri == null) {
+        //hide the delete menu item if activity is in creating new product mode
+        if (mDataItemUri == null) {
             menu.findItem(R.id.action_delete).setVisible(false);
+            return true;
         }
         return super.onPrepareOptionsMenu(menu);
     }
 
-    private boolean isInputValid() {
-        return !et_name.getText().toString().isEmpty() &&
-                !et_price.getText().toString().isEmpty() &&
-                !et_quantity.getText().toString().isEmpty() &&
-                !et_supplier.getText().toString().isEmpty() &&
-                !et_supplier_phone.getText().toString().isEmpty();
+    @Override
+    public void onBackPressed() {
+        if (mChangeDetected) {
+            Utils.showConfirmDialog("Do you want to discard changes?",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //dismiss changes by letting the system handle the event as usual.
+                            ProductActivity.super.onBackPressed();
+                        }
+                    }, this);
+        } else {
+            //let the system handle it as usual.
+            super.onBackPressed();
+        }
+    }
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+        switch (id) {
+            case PRODUCT_LOADER_ID:
+                return new CursorLoader(this, mDataItemUri,
+                        null, null, null, null);
+            default:
+                throw new IllegalArgumentException("Unknown Loader ID!");
+        }
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor cursor) {
+        loadDataFromCursor(cursor);
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        for (View v : inputFields) {
+            if (v instanceof EditText) {
+                ((EditText) v).setText("");
+            }
+        }
+    }
+
+    private void loadItemFromUriIfAvailable() {
+        mDataItemUri = getIntent().getData();
+
+        if (mDataItemUri != null) {
+            getSupportLoaderManager().initLoader(PRODUCT_LOADER_ID, null, this);
+            getSupportActionBar().setTitle(getString(R.string.product_activity_edit_title));
+        } else {
+            getSupportActionBar().setTitle(getString(R.string.product_activity_add_title));
+        }
     }
 
     private void contactSupplier() {
@@ -165,7 +197,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
             return;
         }
 
-        String s = et_supplier_phone.getText().toString();
+        String s = editTextSupplierPhoneNumber.getText().toString();
 
         if (s.isEmpty())
             Toast.makeText(this, "Please Provide A number first", Toast.LENGTH_SHORT).show();
@@ -182,8 +214,8 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
             ContentResolver resolver = getContentResolver();
 
-            if (mItemUri != null) {
-                resolver.update(mItemUri, values, null, null);
+            if (mDataItemUri != null) {
+                resolver.update(mDataItemUri, values, null, null);
             } else {
                 resolver.insert(ProductContract.ProductEntry.CONTENT_URI, values);
             }
@@ -196,105 +228,12 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         }
     }
 
-    private ContentValues extractContentValues() {
-        return ProductContract.ProductEntry.CreateContentValues(
-                ((EditText) findViewById(R.id.et_product_name)).getText().toString(),
-                Integer.parseInt(((EditText) findViewById(R.id.et_price)).getText().toString()),
-                Integer.parseInt(((EditText) findViewById(R.id.et_quantity)).getText().toString()),
-                ((EditText) findViewById(R.id.et_supplier)).getText().toString(),
-                ((EditText) findViewById(R.id.et_supplier_phone)).getText().toString());
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        switch (item.getItemId()) {
-            case R.id.action_delete:
-                if (mItemUri != null) {
-                    Utils.showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            getContentResolver().delete(mItemUri, null, null);
-                            finish();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    }, this);
-                } else {
-                    Utils.showConfirmDialog("do you want to discard changes", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            finish();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    }, this);
-                }
-                return true;
-            case R.id.action_save_changes:
-
-                saveChangesAndFinish();
-
-                return true;
-            case android.R.id.home:
-                if (mChangeDetected) {
-                    Utils.showConfirmDialog("Do you want to discard changes?", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            ProductActivity.this.finish();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    }, this);
-                    return true;
-                } else {
-                    return false;
-                }
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (mChangeDetected) {
-            Utils.showConfirmDialog("Do you want to discard changes?",
-                    new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            ProductActivity.this.finish();
-                        }
-                    },
-                    new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    },
-                    this);
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @NonNull
-    @Override
-    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
-        return new CursorLoader(this, mItemUri,
-                null, null, null, null);
-    }
-
-    @Override
-    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor cursor) {
-        loadDataFromCursor(cursor);
+    private boolean isInputValid() {
+        return !editTextName.getText().toString().isEmpty() &&
+                !editTextPrice.getText().toString().isEmpty() &&
+                !editTextQuantity.getText().toString().isEmpty() &&
+                !editTextSupplierName.getText().toString().isEmpty() &&
+                !editTextSupplierPhoneNumber.getText().toString().isEmpty();
     }
 
     private void loadDataFromCursor(Cursor cursor) {
@@ -307,31 +246,78 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
                 switch (name) {
                     case ProductContract.ProductEntry.COLUMN_PRODUCT_NAME:
-                        et_name.setText(cursorString);
+                        editTextName.setText(cursorString);
                         break;
                     case ProductContract.ProductEntry.COLUMN_PRODUCT_PRICE:
-                        et_price.setText(cursorString);
+                        editTextPrice.setText(cursorString);
                         break;
                     case ProductContract.ProductEntry.COLUMN_PRODUCT_QUANTITY:
-                        et_quantity.setText(cursorString);
+                        editTextQuantity.setText(cursorString);
                         break;
                     case ProductContract.ProductEntry.COLUMN_PRODUCT_SUPPLIER_NAME:
-                        et_supplier.setText(cursorString);
+                        editTextSupplierName.setText(cursorString);
                         break;
                     case ProductContract.ProductEntry.COLUMN_PRODUCT_SUPPLIER_PHONE:
-                        et_supplier_phone.setText(cursorString);
+                        editTextSupplierPhoneNumber.setText(cursorString);
                         break;
                 }
             }
         }
     }
 
-    @Override
-    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+    private ContentValues extractContentValues() {
+        return ProductContract.ProductEntry.CreateContentValues(
+                ((EditText) findViewById(R.id.et_product_name)).getText().toString(),
+                Integer.parseInt(((EditText) findViewById(R.id.et_price)).getText().toString()),
+                Integer.parseInt(((EditText) findViewById(R.id.et_quantity)).getText().toString()),
+                ((EditText) findViewById(R.id.et_supplier)).getText().toString(),
+                ((EditText) findViewById(R.id.et_supplier_phone)).getText().toString());
+    }
+
+    private void setupChangeListener() {
         for (View v : inputFields) {
-            if (v instanceof EditText) {
-                ((EditText) v).setText("");
-            }
+            v.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v1, MotionEvent event) {
+                    mChangeDetected = true;
+                    return false;
+                }
+            });
         }
+    }
+
+    private void setupQuantityButtons() {
+        View[] quantityButtons = new View[]{findViewById(R.id.btn_increase_quantity),
+                findViewById(R.id.btn_decrease_quantity)};
+
+        for (View v : quantityButtons) {
+            v.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int quantity = Integer.parseInt(editTextQuantity.getText().toString());
+
+                    switch (v.getId()) {
+                        case R.id.btn_increase_quantity:
+
+                            editTextQuantity.setText(String.valueOf(++quantity));
+
+                            break;
+                        case R.id.btn_decrease_quantity:
+
+                            if (quantity > 0) {
+                                editTextQuantity.setText(String.valueOf(--quantity));
+                            } else {
+                                Toast.makeText(ProductActivity.this, "Negative Values Are Not Allowed!", Toast.LENGTH_SHORT).show();
+                            }
+
+                            break;
+                    }
+                }
+            });
+        }
+    }
+
+    private void deleteCurrentProduct() {
+        getContentResolver().delete(mDataItemUri, null, null);
     }
 }
