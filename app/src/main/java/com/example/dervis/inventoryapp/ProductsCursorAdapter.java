@@ -72,7 +72,6 @@ class ProductsCursorAdapter extends CursorAdapter {
 
     private void reduceQuantityForUri(Context context, Uri uri, int quantity) {
 
-
         if (quantity > 0) {
             ContentResolver resolver = context.getContentResolver();
 

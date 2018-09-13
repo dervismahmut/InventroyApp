@@ -157,26 +157,26 @@ public class ProductContentProvider extends ContentProvider {
 
         switch (sUriMatcher.match(uri)) {
             case PRODUCTS:
-                return updateProduct(values, selection, selectionArgs);
+                return updateProduct(uri, values, selection, selectionArgs);
             case PRODUCT_ID:
 
                 selection = ProductEntry._ID + "=?";
                 selectionArgs = extractSelectionArgs(uri);
 
-                return updateProduct(values, selection, selectionArgs);
+                return updateProduct(uri, values, selection, selectionArgs);
             default:
                 throw new IllegalArgumentException("Uri is not Supported: " + uri);
         }
     }
 
-    private int updateProduct(ContentValues values, String selection, String[] selectionArgs) {
+    private int updateProduct(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         int rowsAffected = db.update(ProductEntry.TABLE_NAME, values, selection, selectionArgs);
 
         if (rowsAffected > 0) {
             Toast.makeText(getContext(), "Rows Updated :" + rowsAffected, Toast.LENGTH_SHORT).show();
-            notifyChangeInData(ProductEntry.CONTENT_URI);
+            notifyChangeInData(uri);
         } else {
             Toast.makeText(getContext(), "Update Unsuccessful", Toast.LENGTH_SHORT).show();
         }
