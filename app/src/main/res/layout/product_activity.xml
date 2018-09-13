@@ -57,7 +57,7 @@
                 android:layout_height="wrap_content"
                 android:ems="10"
                 android:hint="@string/hint_price"
-                android:inputType="numberDecimal"
+                android:inputType="number"
                 android:selectAllOnFocus="true" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -90,7 +90,7 @@
                     android:layout_height="wrap_content"
                     android:ems="10"
                     android:hint="@string/hint_quantity"
-                    android:inputType="numberDecimal"
+                    android:inputType="number"
                     android:selectAllOnFocus="true" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -109,7 +109,7 @@
                     android:layout_marginRight="8dp"
                     android:layout_weight="1"
                     android:text="-"
-                    android:textSize="20dp" />
+                    android:textSize="20sp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_increase_quantity"
@@ -120,7 +120,7 @@
                     android:layout_marginLeft="8dp"
                     android:layout_weight="1"
                     android:text="+"
-                    android:textSize="20dp" />
+                    android:textSize="20sp" />
             </LinearLayout>
 
         </LinearLayout>

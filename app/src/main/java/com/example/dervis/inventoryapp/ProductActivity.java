@@ -286,14 +286,19 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
     }
 
     private void setupQuantityButtons() {
-        View[] quantityButtons = new View[]{findViewById(R.id.btn_increase_quantity),
+        final View[] quantityButtons = new View[]{findViewById(R.id.btn_increase_quantity),
                 findViewById(R.id.btn_decrease_quantity)};
 
         for (View v : quantityButtons) {
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    int quantity = Integer.parseInt(editTextQuantity.getText().toString());
+                    String quantityString = editTextQuantity.getText().toString();
+                    int quantity = 0;
+
+                    if (!quantityString.isEmpty()) {
+                        quantity = Integer.parseInt(quantityString);
+                    }
 
                     switch (v.getId()) {
                         case R.id.btn_increase_quantity:
