@@ -107,8 +107,12 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
     @NonNull
     @Override
     public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
-        return new CursorLoader(this, ProductEntry.CONTENT_URI,
-                null, null, null, null);
+        switch (id) {
+            case PRODUCTS_LOADER_ID:
+                return new CursorLoader(this, ProductEntry.CONTENT_URI,
+                        null, null, null, null);
+        }
+        return null;
     }
 
     @Override
