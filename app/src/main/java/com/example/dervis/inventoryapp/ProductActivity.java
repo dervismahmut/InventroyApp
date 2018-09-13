@@ -9,13 +9,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -24,6 +17,14 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.dervis.inventoryapp.data.ProductContract;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.CursorLoader;
+import androidx.loader.content.Loader;
 
 public class ProductActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -50,6 +51,31 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         et_supplier_phone = findViewById(R.id.et_supplier_phone);
 
         inputFields = new View[]{et_name, et_price, et_quantity, et_supplier, et_supplier_phone, findViewById(R.id.btn_decrease_quantity), findViewById(R.id.btn_increase_quantity)};
+
+        findViewById(R.id.btn_call_supplier).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mChangeDetected) {
+                    showConfirmDialog(
+                            "Would you like to save changes?", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    saveChangesAndFinish();
+                                    contactSupplier();
+                                }
+                            },
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            },
+                            ProductActivity.this);
+                } else {
+                    contactSupplier();
+                }
+            }
+        });
 
 
         setupChangeListener();
@@ -116,6 +142,14 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         return true;
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (mItemUri == null) {
+            menu.findItem(R.id.action_delete).setVisible(false);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
     public static void showConfirmDialog(String message, DialogInterface.OnClickListener positiveListener, DialogInterface.OnClickListener negativeListener, Context context) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
 
@@ -137,23 +171,35 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
     }
 
     private void contactSupplier() {
-        Intent intent = new Intent(Intent.ACTION_DIAL);
-        intent.setData(Uri.parse("tel:" + et_supplier_phone.getText().toString()));
-        startActivity(intent);
+        String s = et_supplier_phone.getText().toString();
+
+        if (s.isEmpty())
+            Toast.makeText(this, "Please Provide A number first", Toast.LENGTH_SHORT).show();
+        else {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse("tel:" + s));
+            startActivity(intent);
+        }
     }
 
-    private void saveChanges() {
-        ContentValues values = extractContentValues();
+    private void saveChangesAndFinish() {
+        if (isInputValid()) {
+            ContentValues values = extractContentValues();
 
-        ContentResolver resolver = getContentResolver();
+            ContentResolver resolver = getContentResolver();
 
-        if (mItemUri != null) {
-            resolver.update(mItemUri, values, null, null);
+            if (mItemUri != null) {
+                resolver.update(mItemUri, values, null, null);
+            } else {
+                resolver.insert(ProductContract.ProductEntry.CONTENT_URI, values);
+            }
+
+            mChangeDetected = false;
+
+            finish();
         } else {
-            resolver.insert(ProductContract.ProductEntry.CONTENT_URI, values);
+            Toast.makeText(this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
         }
-
-        mChangeDetected = false;
     }
 
     private ContentValues extractContentValues() {
@@ -197,34 +243,9 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                     }, this);
                 }
                 return true;
-            case R.id.action_contact_supplier:
-                if (mChangeDetected) {
-                    showConfirmDialog("Would you like to save changes first?", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            saveChanges();
-                            contactSupplier();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    }, this);
-                } else {
-                    contactSupplier();
-                }
-
-
-                return true;
             case R.id.action_save_changes:
 
-                if (isInputValid()) {
-                    saveChanges();
-                    finish();
-                } else {
-                    Toast.makeText(this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
-                }
+                saveChangesAndFinish();
 
                 return true;
             case android.R.id.home:
@@ -250,27 +271,23 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
 
     @Override
     public void onBackPressed() {
-        if (!mChangeDetected) {
-            super.onBackPressed();
-        } else {
-            showConfirmDialog("Would you like to save changes first?",
+        if (mChangeDetected) {
+            showConfirmDialog("Do you want to discard changes?",
                     new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            if (isInputValid()) {
-                                saveChanges();
-                                ProductActivity.super.onBackPressed();
-                            } else {
-                                Toast.makeText(ProductActivity.this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
-                            }
+                            ProductActivity.this.finish();
                         }
-                    }, new DialogInterface.OnClickListener() {
+                    },
+                    new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.dismiss();
-                            ProductActivity.super.onBackPressed();
                         }
-                    }, this);
+                    },
+                    this);
+        } else {
+            super.onBackPressed();
         }
     }
 
