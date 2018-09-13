@@ -3,6 +3,7 @@ package com.example.dervis.inventoryapp;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -115,87 +116,16 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
         return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public static void showConfirmDialog(String message, DialogInterface.OnClickListener positiveListener, DialogInterface.OnClickListener negativeListener, Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
 
-        switch (item.getItemId()) {
-            case R.id.action_delete:
-                if (mItemUri != null) {
-                    showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            getContentResolver().delete(mItemUri, null, null);
-                            finish();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-                } else {
-                    showConfirmDialog("do you want to discard changes", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            finish();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-                }
-                return true;
-            case R.id.action_contact_supplier:
-                if (mChangeDetected) {
-                    showConfirmDialog("Would you like to save changes first?", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            saveChanges();
-                            contactSupplier();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-                } else {
-                    contactSupplier();
-                }
+        builder.setMessage(message);
 
+        builder.setPositiveButton("Yes", positiveListener);
 
-                return true;
-            case R.id.action_save_changes:
+        builder.setNegativeButton("No", negativeListener);
 
-                if (isInputValid()) {
-                    saveChanges();
-                    finish();
-                } else {
-                    Toast.makeText(this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
-                }
-
-                return true;
-            case android.R.id.home:
-                if (mChangeDetected) {
-                    showConfirmDialog("Do you want to discard changes?", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            ProductActivity.this.finish();
-                        }
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-                    return true;
-                } else {
-                    return false;
-                }
-        }
-        return super.onOptionsItemSelected(item);
+        builder.create().show();
     }
 
     private boolean isInputValid() {
@@ -235,16 +165,87 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                 ((EditText) findViewById(R.id.et_supplier_phone)).getText().toString());
     }
 
-    private void showConfirmDialog(String message, DialogInterface.OnClickListener positiveListener, DialogInterface.OnClickListener negativeListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
 
-        builder.setMessage(message);
+        switch (item.getItemId()) {
+            case R.id.action_delete:
+                if (mItemUri != null) {
+                    showConfirmDialog("Do you want to delete this Product?", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            getContentResolver().delete(mItemUri, null, null);
+                            finish();
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    }, this);
+                } else {
+                    showConfirmDialog("do you want to discard changes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    }, this);
+                }
+                return true;
+            case R.id.action_contact_supplier:
+                if (mChangeDetected) {
+                    showConfirmDialog("Would you like to save changes first?", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            saveChanges();
+                            contactSupplier();
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    }, this);
+                } else {
+                    contactSupplier();
+                }
 
-        builder.setPositiveButton("Yes", positiveListener);
 
-        builder.setNegativeButton("No", negativeListener);
+                return true;
+            case R.id.action_save_changes:
 
-        builder.create().show();
+                if (isInputValid()) {
+                    saveChanges();
+                    finish();
+                } else {
+                    Toast.makeText(this, "Please Make Sure All Fields Are Filled", Toast.LENGTH_SHORT).show();
+                }
+
+                return true;
+            case android.R.id.home:
+                if (mChangeDetected) {
+                    showConfirmDialog("Do you want to discard changes?", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            ProductActivity.this.finish();
+                        }
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    }, this);
+                    return true;
+                } else {
+                    return false;
+                }
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -269,7 +270,7 @@ public class ProductActivity extends AppCompatActivity implements LoaderManager.
                             dialog.dismiss();
                             ProductActivity.super.onBackPressed();
                         }
-                    });
+                    }, this);
         }
     }
 

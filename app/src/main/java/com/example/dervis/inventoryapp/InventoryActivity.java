@@ -3,6 +3,7 @@ package com.example.dervis.inventoryapp;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -28,35 +29,33 @@ import static com.example.dervis.inventoryapp.data.ProductContract.ProductEntry;
  */
 public class InventoryActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
-    private static final int PRODUCTS_LOADER_ID = 100;
+    private static final int LOADER_PRODUCTS_ID = 100;
     private ListView mListView;
     private CursorAdapter mAdapter;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.inventory_activity);
-
-        FloatingActionButton fab = findViewById(R.id.floatingActionButton);
-
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(InventoryActivity.this, ProductActivity.class);
-                startActivity(intent);
-            }
-        });
 
         mListView = findViewById(R.id.lv_inventory);
 
-        mListView.setEmptyView(findViewById(R.id.empty_view_message));
-
         mAdapter = new ProductsCursorAdapter(this, null);
+
+        setupFab();
+
+        setupListView();
+
+        getSupportLoaderManager().initLoader(LOADER_PRODUCTS_ID, null, this);
+    }
+
+    private void setupListView() {
+        mListView.setEmptyView(findViewById(R.id.empty_view_message));
 
         mListView.setAdapter(mAdapter);
 
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
@@ -69,9 +68,18 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
                 startActivity(intent);
             }
         });
+    }
 
-        getSupportLoaderManager().initLoader(PRODUCTS_LOADER_ID, null, this);
+    private void setupFab() {
+        FloatingActionButton fab = findViewById(R.id.floatingActionButton);
 
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(InventoryActivity.this, ProductActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
@@ -95,9 +103,19 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
                 return true;
 
             case R.id.action_delete_all:
-
-                contentResolver.delete(ProductEntry.CONTENT_URI,
-                        null, null);
+                ProductActivity.showConfirmDialog("Do You Want To Delete All Products?",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                getContentResolver().delete(ProductEntry.CONTENT_URI, null, null);
+                            }
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        },
+                        this);
                 return true;
         }
 
@@ -108,11 +126,12 @@ public class InventoryActivity extends AppCompatActivity implements LoaderManage
     @Override
     public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
         switch (id) {
-            case PRODUCTS_LOADER_ID:
+            case LOADER_PRODUCTS_ID:
                 return new CursorLoader(this, ProductEntry.CONTENT_URI,
                         null, null, null, null);
+            default:
+                throw new IllegalArgumentException("Unknown Loader ID!");
         }
-        return null;
     }
 
     @Override
